@@ -15,11 +15,6 @@ extension_info = {
 ext = Extension(extension_info, args=sys.argv)
 ext.start()
 
-headers = {
-    "RoomUsers": 509,
-    "MessengerError": 260
-}
-
 TOTAL_ADDS = 0
 
 def start_adding(message):
@@ -36,5 +31,5 @@ def start_adding(message):
 def BlockMsgErr(message : HMessage):
     message.is_blocked = True
 
-ext.intercept(Direction.TO_CLIENT, start_adding, headers["RoomUsers"], mode='async')
-ext.intercept(Direction.TO_CLIENT, BlockMsgErr, headers["MessengerError"])
+ext.intercept(Direction.TO_CLIENT, start_adding, 'Users', mode='async')
+ext.intercept(Direction.TO_CLIENT, BlockMsgErr, 'MessengerError')
