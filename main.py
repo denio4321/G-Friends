@@ -19,7 +19,9 @@ headers = {
     "RoomUsers": 509,
     "MessengerError": 260
 }
+
 TOTAL_ADDS = 0
+
 def start_adding(message):
     global TOTAL_ADDS
     packet = message.packet
