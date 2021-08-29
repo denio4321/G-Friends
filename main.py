@@ -1,3 +1,4 @@
+import sys
 from time import sleep
 from tkinter import *
 import tkinter.font as TkFont
@@ -14,10 +15,20 @@ extension_info = {
     "version": "1.0"
 }
 
+extension_settings = {
+    "use_click_trigger": True,
+    "can_leave": True,
+    "can_delete": True
+}
+
+
+ext = Extension(extension_info, args=sys.argv, extension_settings=extension_settings)
+
+ext.start()
+
 GREEN = "#75BD4B"
 RED = "#FF0000"
 WHITE = "#FFF"
-
 
 class HFriends:
     def __init__(self, packet):
@@ -30,9 +41,10 @@ class HFriends:
 
 
 class Friendbomber:
-    def __init__(self, extension: Extension):
+    def __init__(self):
         global GREEN, RED, WHITE
-        self.__ext = extension
+        global ext
+        self.__ext = ext
         self.TOTAL_ADDS = 0
         self.ACTIVE = False
         self.friend_list = []
@@ -41,7 +53,7 @@ class Friendbomber:
         self.text_font = TkFont.Font(family="System", size=10)
         self.root.option_add('System', '10')
         self.root.title("G-Friends")
-        self.root.geometry("250x400")
+        self.root.geometry("250x480")
         self.root.resizable(False, False)
         self.main_frame = Frame(self.root, width=250, height=100)
         self.main_frame.pack()
@@ -63,12 +75,19 @@ class Friendbomber:
         self.scrollbar = Scrollbar(self.main_frame, command=self.log_box.yview, orient="vertical")
         self.scrollbar.grid(row=3, column=1, sticky="ns")
         self.log_box.grid(row=3, column=0, ipady=50, ipadx=30)
+        self.message_label = Label(self.main_frame, text="Message:", font=self.text_font)
+        self.message_label.grid(row=4, column=0, pady=5, sticky=N)
         self.message_box = Entry(self.main_frame, width=35)
-        self.message_box.grid(row=4, column=0, pady=10, padx=7)
-        self.send_message_btn = Button(self.main_frame, text="Send", font=self.text_font, command=self.send_msg_btn,
+        self.message_box.grid(row=4, column=0, pady=25, padx=0, sticky=S)
+        self.user_kwd = Button(self.main_frame, text="User Keyworkd", font=self.text_font, command=self.add_keyword_to_text,
                                        bg=WHITE, width=10)
-        self.send_message_btn.grid(row=5, column=0, padx=20)
-
+        self.user_kwd.grid(row=5, column=0, padx=7)
+        self.send_message_btn = Button(self.main_frame, text="Send", font=self.text_font, command=self.send_msg_action,
+                                       bg=WHITE, width=10)
+        self.send_message_btn.grid(row=6, column=0, padx=15, pady=10, sticky=W)
+        self.delete_friends_btn = Button(self.main_frame, text="Delete friends", font=self.text_font, command=self.delete_friends_action,
+                                       bg=WHITE, width=10)
+        self.delete_friends_btn.grid(row=6, column=0, padx=15, pady=10, ipadx=5, sticky=E)
         ext.intercept(Direction.TO_CLIENT, self.clear_log, 'RoomReady')
         ext.intercept(Direction.TO_CLIENT, self.obtain_friend_list, 'FriendListFragment')
         ext.intercept(Direction.TO_CLIENT, self.start_adding, 'Users', mode="async")
@@ -82,13 +101,34 @@ class Friendbomber:
     def exit_extension():
         exit()
 
+    def add_keyword_to_text(self):
+        self.message_box.insert(END, " {user} ")
+
+    def delete_friends_action(self):
+        self.log_box.configure(state='normal')
+        self.log_box.insert(END,
+                            f"Starting friend deleting process.\n")
+        self.log_box.see(END)
+        self.log_box.configure(state='disabled')
+        if self.friend_list:
+            for friend in self.friend_list.friends:
+                ext.send_to_server(HPacket('RemoveFriend', 1, friend[0]))
+                sleep(1)
+        self.log_box.configure(state='normal')
+        self.log_box.insert(END,
+                            f"Deleted all your friends!\n")
+        self.log_box.see(END)
+        self.log_box.configure(state='disabled')
     def clear_log(self, message):
         self.log_box.configure(state='normal')
         self.log_box.delete("1.0", END)
         self.log_box.configure(state='disabled')
 
-    def send_msg_btn(self):
+    def send_msg_action(self):
         threading.Thread(target=self.send_message).start()
+
+    def delete_friends_btn(self):
+        threading.Thread(target=self.delete_friends).start()
 
     def send_message(self):
         if self.friend_list:
@@ -162,8 +202,4 @@ class Friendbomber:
     def block_err(message: HMessage):
         message.is_blocked = True
 
-
-ext = Extension(extension_info, args=sys.argv)
-ext.start()
-
-g_friends = Friendbomber(ext)
+ext.on_event('double_click', Friendbomber)
