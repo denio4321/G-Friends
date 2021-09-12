@@ -22,7 +22,7 @@ extension_settings = {
 }
 
 
-ext = Extension(extension_info, args=sys.argv, extension_settings=extension_settings)
+ext = Extension(extension_info, ["-p", "9092"], extension_settings=extension_settings)
 
 ext.start()
 
@@ -47,7 +47,8 @@ class Friendbomber:
         self.__ext = ext
         self.TOTAL_ADDS = 0
         self.ACTIVE = False
-        self.friend_list = []
+        self.friend_ids = []
+        self.friend_usernames = []
         self.root = Tk()
         self.root.iconphoto(False, PhotoImage(file='icon.png'))
         self.text_font = TkFont.Font(family="System", size=10)
@@ -110,8 +111,8 @@ class Friendbomber:
                             f"Starting friend deleting process.\n")
         self.log_box.see(END)
         self.log_box.configure(state='disabled')
-        if self.friend_list:
-            for friend in self.friend_list.friends:
+        if self.friend_ids:
+            for friend in self.friend_ids:
                 ext.send_to_server(HPacket('RemoveFriend', 1, friend[0]))
                 sleep(1)
         self.log_box.configure(state='normal')
@@ -131,10 +132,10 @@ class Friendbomber:
         threading.Thread(target=self.delete_friends).start()
 
     def send_message(self):
-        if self.friend_list:
-            for friend_entity in self.friend_list.friends:
-                user_id = friend_entity[0]
-                user_name = friend_entity[1]
+        if self.friend_ids:
+            for i in range(len(self.friend_ids)):
+                user_id = self.friend_ids[i]
+                user_name = self.friend_usernames[i]
                 if "{user}" in self.message_box.get():
                     message = self.message_box.get().replace("{user}", user_name)
                 else:
@@ -153,18 +154,24 @@ class Friendbomber:
             self.log_box.see(END)
             self.log_box.configure(state='disabled')
 
-    @staticmethod
-    def request_friends():
+    def request_friends(self):
+        if self.friend_ids:
+            self.friend_ids.clear()
+        if self.friend_usernames:
+            self.friend_usernames.clear()
         ext.send_to_server(HPacket('MessengerInit'))
 
     def obtain_friend_list(self, message: HMessage):
-        self.friend_list = HFriends(message.packet)
+        friend_list = HFriends(message.packet)
+        for i in range(len(friend_list.friends)):
+            self.friend_ids.append(friend_list.friends[i][0])
+            self.friend_usernames.append(friend_list.friends[i][1])
         self.log_box.configure(state='normal')
         self.log_box.insert(END,
-                            f"[G-Friends] Added {self.friend_list.total_friends} friends to the friend list!\n")
+                            f"[G-Friends] Added {len(self.friend_ids)} friends to the friend list!\n")
         self.log_box.see(END)
         self.log_box.configure(state='disabled')
-        self.total_friends.configure(text=f"Loaded Friends: {self.friend_list.total_friends}")
+        self.total_friends.configure(text=f"Loaded Friends: {len(self.friend_ids)}")
         message.is_blocked = True
 
     def start_adding(self, message: HMessage):
