@@ -39,7 +39,6 @@ class HFriends:
             id_user, name, _, _, _, clothes, _, motto, _, _, _, _, _, _ = packet.read('isiBBsisssBBBu')
             self.friends.append([id_user, name, clothes, motto])
 
-
 class Friendbomber:
     def __init__(self):
         global GREEN, RED, WHITE
