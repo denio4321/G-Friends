@@ -9,3 +9,9 @@ For example:
  - "Hey! {user} do you want to come to my party?"
 
 - Requires g-python. (https://github.com/sirjonasxx/G-Python)
+- Requires TKinter
+
+Use the following command to install both dependencies:
+````
+python -m pip install g-python tk
+````
